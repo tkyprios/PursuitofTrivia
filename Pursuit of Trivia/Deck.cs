@@ -41,48 +41,59 @@ namespace Pursuit_of_Trivia
             InitializeFallbackChoices();
         }
 
-
+        /// <summary>
+        /// Creates a new trivia card with a question, a correct answer, and a set of multiple-choice options.
+        /// </summary>
+        /// <remarks>The method ensures that the card's choices include the correct answer and additional
+        /// unique options.  If there are not enough unique options available from existing cards in the same category,
+        /// fallback choices  specific to the category are used. The final set of choices is shuffled to randomize their
+        /// order.</remarks>
+        /// <param name="questionCategory">The category of the question, used to group related cards and determine fallback choices.</param>
+        /// <param name="questionText">The text of the question to be displayed on the card.</param>
+        /// <param name="correctAnswer">The correct answer to the question. This will always be included in the card's choices.</param>
+        /// <returns>A <see cref="Card"/> instance containing the specified question, the correct answer, and a shuffled list of
+        /// multiple-choice options.</returns>
         private Card CreateCard(Category questionCategory, string questionText, string correctAnswer)
         {
 
             // Logic for finding all answers from same category
             IEnumerable<Card> existingCategoryCards = QuestionDecks[questionCategory];
-            List<string> newCardChoices = new List<string>();
+            HashSet<string> uniqueChoices = new HashSet<string>(); // use this for building the choices - automatic handling for duplicate answers.
 
-            newCardChoices.Add(correctAnswer); // first choice to be added
+            uniqueChoices.Add(correctAnswer); // first choice to be added
 
+
+            //Try getting choices/answers from existing cards
             foreach (var selectedCard in existingCategoryCards)
             {
-                if (newCardChoices.Count == 4) break;
+                if (uniqueChoices.Count == Card.REQUIRED_CHOICES) break;
                 foreach (string choice in selectedCard.Choices)
                 {
-                    if (newCardChoices.Contains(choice)) continue;
-                    newCardChoices.Add(choice);
+                    uniqueChoices.Add(choice); // Hashset handles potential duplicates
+                    if (uniqueChoices.Count == Card.REQUIRED_CHOICES) break;
 
                 }
             }
 
-            // Use Fallback answers if not enough
-            if (newCardChoices.Count < 4)
+            // Use Fallback answers if not enough choices to create a card
+            if (uniqueChoices.Count < Card.REQUIRED_CHOICES)
             {
-                IEnumerable<String> categoryFallbackChoices = FallbackChoices[questionCategory].Shuffle();
+                IEnumerable<String> shuffledFallbacks = FallbackChoices[questionCategory].Shuffle();
 
-                foreach (string choice in categoryFallbackChoices)
+                foreach (string choice in shuffledFallbacks)
                 {
-                    if (newCardChoices.Count == 4) break;
-                    if (!newCardChoices.Contains(choice))
-                        newCardChoices.Add(choice);
-                    }
+                    uniqueChoices.Add(choice);
+                    if (uniqueChoices.Count == Card.REQUIRED_CHOICES) break;
+                }
                     
              }
 
             // Shuffle the final choices so the correct answer isn't always first. Use 'Shuffle' method created in PursuitOfTrivia.Extensions.
-            newCardChoices = newCardChoices.Shuffle();
-
-            //@TODO see what AI thinks of the current setup. Is there a better way to structure?
+            // Additionally, convert the HashSet to a List so its in a format that is expected for card creation.
+            var finalCardChoices = uniqueChoices.ToList().Shuffle();
 
             // Logic for getting the question and correct answer
-            return new Card(questionCategory, questionText, newCardChoices, correctAnswer);
+            return new Card(questionCategory, questionText, finalCardChoices, correctAnswer);
         }
 
         /// <summary>
