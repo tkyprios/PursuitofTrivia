@@ -6,12 +6,11 @@ namespace Pursuit_of_Trivia
 {
     /// <summary>
     /// Class representing the overall game state, including setting up players (and bots) and initializing the game table with the master question deck.
+    /// Implements the "how" (turn logic, game flow, win conditions)
     /// </summary>
     internal class Game
     {
         public Table GameTable { get; set; }
-
-        public Player currentPlayer { get; set; }
 
         /// <summary>
         /// Constructor for the Game class, initializes the game table with a master deck of questions covering all categories.
@@ -42,13 +41,42 @@ namespace Pursuit_of_Trivia
             Console.WriteLine("What would you like your username to be?");
             string playerUsername = Console.ReadLine();
 
-            currentPlayer = new Player(playerUsername);
-            Console.WriteLine($"Welcome, {currentPlayer.Name}! Press any key to start the game...");
+            var player = new Player(playerUsername);
+            Console.WriteLine($"Welcome, {player.Name}! Press any key to start the game...");
             Console.ReadKey(true);
             
-            GameTable.AddPlayerToGame(currentPlayer);
+            GameTable.AddPlayerToGame(player);
             GameTable.AddBotToGame();
         }
+
+
+        private void ProcessTurn()
+        {
+            Console.Clear();
+            Console.WriteLine($"It's {GameTable.GetCurrentPlayer()}'s turn!");
+            DisplayTurnOptions();
+
+            if (!int.TryParse(Console.ReadLine(), out int choice))
+            {
+                Console.WriteLine("Please enter a valid number.");
+                Console.Clear();
+                DisplayTurnOptions();
+            }
+
+            // switch statement
+
+
+        }
+
+        private void DisplayTurnOptions()
+        {
+            Console.WriteLine($"What would you like to do?");
+            Console.WriteLine("1. Draw a Question Card");
+            Console.WriteLine("2. Show Scores");
+            Console.WriteLine("0. Forfeit/Quit");
+        }
+
+
 
 
     }

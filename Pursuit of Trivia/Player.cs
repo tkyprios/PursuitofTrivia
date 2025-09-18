@@ -16,6 +16,7 @@ namespace Pursuit_of_Trivia
 
         private Dictionary<Category, int> _categoryScores; // use of '_' convention for private field
         private List<Card> _earnedCards;
+        private const int REQ_CARD_SCORE = 3;
 
         public Player(string name)
         {
@@ -68,6 +69,25 @@ namespace Pursuit_of_Trivia
             return false;
 
         }
+
+        /// <summary>
+        /// Determines whether the player has met the required score for all categories.
+        /// </summary>
+        /// <remarks>A category is considered to meet the requirement if its score is greater than or
+        /// equal to the predefined threshold value. This method evaluates all categories to determine the
+        /// result.</remarks>
+        /// <returns><see langword="true"/> if the player has achieved the required score in all categories; otherwise, <see
+        /// langword="false"/>.</returns>
+        public bool HasWon()
+        {
+            return _categoryScores.All(keyValuePair => {
+                Category category = keyValuePair.Key;     
+                int scoreValue = keyValuePair.Value;      
+                return scoreValue >= REQ_CARD_SCORE;
+            });
+        }
+
+        private bool CategoryScoreAchieved(Category category) => _categoryScores[category] >= REQ_CARD_SCORE;
 
     }
 }
