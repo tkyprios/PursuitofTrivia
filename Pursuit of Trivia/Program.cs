@@ -14,7 +14,7 @@ namespace Pursuit_of_Trivia
             {
                 ShowWelcomeScreen();
                 Game game = new Game();
-                game.SetupPlayers();
+                game.StartGame();
             }
         }
 

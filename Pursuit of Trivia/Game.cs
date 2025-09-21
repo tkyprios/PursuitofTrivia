@@ -32,7 +32,7 @@ namespace Pursuit_of_Trivia
         /// Sets up the players for the game by prompting the user for their username and initializing the current
         /// player and a bot player.
         /// </summary>
-        public void SetupPlayers()
+        private void SetupPlayers()
         {
             Console.Clear();
 
@@ -49,24 +49,94 @@ namespace Pursuit_of_Trivia
             GameTable.AddBotToGame();
         }
 
+        public void StartGame()
+        {
+            SetupPlayers();
+            bool gameRunning = true;
+
+            while (gameRunning)
+            {
+                ProcessTurn();
+
+                // Check win condition
+
+                // Handle game end
+            }
+        }
+
 
         private void ProcessTurn()
         {
             Console.Clear();
-            Console.WriteLine($"It's {GameTable.GetCurrentPlayer()}'s turn!");
-            DisplayTurnOptions();
+            var currentPlayer = GameTable.GetCurrentPlayer();
+            Console.WriteLine($"It's {currentPlayer}'s turn!");
 
-            if (!int.TryParse(Console.ReadLine(), out int choice))
+            bool turnComplete = false;
+
+            while (!turnComplete)
             {
-                Console.WriteLine("Please enter a valid number.");
-                Console.Clear();
-                DisplayTurnOptions();
+                DisplayTurnOptions(); // Should this be in this function or in a StartGame()?
+
+                if (!int.TryParse(Console.ReadLine(), out int playerSelection))
+                {
+                    Console.WriteLine("Please enter a valid number.");
+                    Console.Clear();
+                    DisplayTurnOptions();
+                }
+
+                switch (playerSelection)
+                {
+                    case 0:
+                        Console.WriteLine($"Player {currentPlayer} has forfeited. Exiting game...");
+                        Environment.Exit(0); // use of gameRunning?
+                        return;
+                    case 1:
+                        HandleDrawCard();
+                        turnComplete = true;
+                        break;
+                    case 2:
+                        DisplayScores();
+                        break;
+                    //case 3:
+                    //  HandleStealCard()
+                    //  turnComplete = true;
+                    //  break;
+                    default:
+                        Console.WriteLine("Invalid input. Press Enter to try again.");
+                        Console.ReadLine();
+                        break;
+                }
             }
 
-            // switch statement
+
+
+            GameTable.GetNextPlayer();
 
 
         }
+
+        private void HandleDrawCard()
+        {
+            // Category selection
+            Console.WriteLine("What question category would you like to draw?");
+
+            // Question presentation
+
+            // Answer validation
+
+            // Score updating - UpdateScores()
+        }
+
+        private void DisplayScores()
+        {
+            throw new NotImplementedException();
+
+            // Each player's category scores
+            // Cards earned
+            // Progress towards winning
+        }
+
+
 
         private void DisplayTurnOptions()
         {
