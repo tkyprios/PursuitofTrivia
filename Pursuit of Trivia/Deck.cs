@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -17,7 +18,7 @@ namespace Pursuit_of_Trivia
 {
     internal class Deck
     {
-        private Dictionary<Category, List<Card>> QuestionDecks;
+        private readonly Dictionary<Category, Queue<Card>> QuestionDecks;
 
         private Dictionary<Category, List<string>> FallbackChoices;
 
@@ -28,12 +29,12 @@ namespace Pursuit_of_Trivia
         /// <param name="questionCategories"> Uses IEnumerable to allow iteration through a list of questionCategories (declared in the enum class)</param>
         public Deck(IEnumerable<Category> questionCategories) 
         {
-            QuestionDecks = new Dictionary<Category, List<Card>>();
+            QuestionDecks = new Dictionary<Category, Queue<Card>>();
 
             // Creates an empty list of cards for each category, initializing the dictionary
             foreach (var category in questionCategories)
             {
-                QuestionDecks[category] = new List<Card>();
+                QuestionDecks[category] = new Queue<Card>();
             }
 
             SeedInitialQuestions();
@@ -95,6 +96,66 @@ namespace Pursuit_of_Trivia
             // Logic for getting the question and correct answer
             return new Card(questionCategory, questionText, finalCardChoices, correctAnswer);
         }
+
+        /// <summary>
+        /// Draws the next available question card from the specified category.
+        /// Essentially dequeuing from the Queue.
+        /// </summary>
+        /// <param name="category">The category from which to draw the question card.</param>
+        /// <returns>The next <see cref="Card"/> in the specified category's deck, or <see langword="null"/>  if the deck for the
+        /// specified category is empty.</returns>
+        public Card DrawQuestionCard(Category category)
+        {
+            // Check category exists
+            if (!QuestionDecks.ContainsKey(category))
+            {
+                throw new ArgumentException($"Invalid category: {category}");
+            }
+
+            // If there are cards in the selected category
+            if (QuestionDecks[category].Count > 0)
+            {
+                return QuestionDecks[category].Dequeue(); // remove a card from top of category deck
+            }
+
+            return null;
+
+        }
+
+        /// <summary>
+        /// Returns an incorrectly answered card to the bottom of its category deck.
+        /// </summary>
+        /// <param name="card">The card to return to the deck</param>
+        public void ReturnCardToBottom(Card card)
+        {
+            QuestionDecks[card.QuestionCategory].Enqueue(card);
+        }
+
+        /// <summary>
+        /// Determines whether the question deck for the specified category is empty.
+        /// </summary>
+        /// <param name="category">The category of the question deck to check.</param>
+        /// <returns><see langword="true"/> if the question deck for the specified category contains no questions; otherwise,
+        /// <see langword="false"/>.</returns>
+       public bool IsDeckEmpty(Category category) =>
+                QuestionDecks[category].Count == 0;
+
+
+        /// <summary>
+        /// Gets the number of remaining cards in a category's deck.
+        /// </summary>
+        /// <param name="category">The category to check</param>
+        /// <returns>The number of cards remaining</returns>
+        public int GetRemainingCardCount(Category category)
+        {
+            if (!QuestionDecks.ContainsKey(category))
+            {
+                throw new ArgumentException($"Invalid category: {category}");
+            }
+            return QuestionDecks[category].Count;
+        }
+
+
 
         /// <summary>
         /// A void method to provide a dictionary of choices/answers when needed.
@@ -159,21 +220,21 @@ namespace Pursuit_of_Trivia
         /// system fail. </remarks>
         private void SeedInitialQuestions()
         {
-            QuestionDecks[Category.Characters].Add(
+            QuestionDecks[Category.Characters].Enqueue(
                 new Card(
                     Category.Characters,
                     "Who trained Count Dooku before he became a Sith Lord?",
                     new List<string> { "Mace Windu", "Qui-Gon Jinn", "Yoda", "Sifo-Dyas" },
                     "Yoda"
                 ));
-            QuestionDecks[Category.Characters].Add(
+            QuestionDecks[Category.Characters].Enqueue(
                 new Card(
                     Category.Characters,
                     "What is Admiral Ackbar's species?",
                     new List<string> { "Quarren", "Mon Calamari", "Ithorian", "Rodian" },
                     "Mon Calamari"
                 ));
-            QuestionDecks[Category.Characters].Add(
+            QuestionDecks[Category.Characters].Enqueue(
                 new Card(
                     Category.Characters,
                     "Which Jedi discovered Ahsoka Tano as a Force-sensitive child?",
@@ -182,21 +243,21 @@ namespace Pursuit_of_Trivia
                 ));
 
 
-            QuestionDecks[Category.PlanetsAndLocations].Add(
+            QuestionDecks[Category.PlanetsAndLocations].Enqueue(
                 new Card(
                     Category.PlanetsAndLocations,
                     "On what planet did Anakin and Obi-Wan duel at the end of Revenge of the Sith?",
                     new List<string> { "Mustafar", "Naboo", "Utapau", "Geonosis" },
                     "Mustafar"
                 ));
-            QuestionDecks[Category.PlanetsAndLocations].Add(
+            QuestionDecks[Category.PlanetsAndLocations].Enqueue(
                 new Card(
                     Category.PlanetsAndLocations,
                     "What planet is the homeworld of the Wookies?",
                     new List<string> { "Endor", "Felucia", "Kashyyyk", "Dantooine" },
                     "Kashyyyk"
                 ));
-            QuestionDecks[Category.PlanetsAndLocations].Add(
+            QuestionDecks[Category.PlanetsAndLocations].Enqueue(
                 new Card(
                     Category.PlanetsAndLocations,
                     "Where is the Jedi Temple located in the prequel trilogy?",
@@ -205,21 +266,21 @@ namespace Pursuit_of_Trivia
                 ));
 
 
-            QuestionDecks[Category.ShipsVehiclesAndTech].Add(
+            QuestionDecks[Category.ShipsVehiclesAndTech].Enqueue(
                 new Card(
                     Category.ShipsVehiclesAndTech,
                     "What class of ship is the Millennium Falcon?",
                     new List<string> { "YT-1300 light freighter", "Firespray-31", "Corellian Corvette", "CR90 transport" },
                     "YT-1300 light freighter"
                 ));
-            QuestionDecks[Category.ShipsVehiclesAndTech].Add(
+            QuestionDecks[Category.ShipsVehiclesAndTech].Enqueue(
                 new Card(
                     Category.ShipsVehiclesAndTech,
                     "What is the name of Darth Vader's personal TIE fighter variant?",
                     new List<string> { "TIE Bomber", "TIE Advanced x1", "TIE Defender", "TIE Interceptor" },
                     "TIE Advanced x1"
                 ));
-            QuestionDecks[Category.ShipsVehiclesAndTech].Add(
+            QuestionDecks[Category.ShipsVehiclesAndTech].Enqueue(
                 new Card(
                     Category.ShipsVehiclesAndTech,
                     "Which Rebel starfighter is known for its split S-foils?",
@@ -228,21 +289,21 @@ namespace Pursuit_of_Trivia
                 ));
 
 
-            QuestionDecks[Category.EventsAndBattles].Add(
+            QuestionDecks[Category.EventsAndBattles].Enqueue(
                 new Card(
                     Category.EventsAndBattles,
                     "What event sparked the beginning of the Clone Wars?",
                     new List<string> { "Siege of Mandalore", "Battle of Geonosis", "Battle of Naboo", "Attack on Kamino" },
                     "Battle of Geonosis"
                 ));
-            QuestionDecks[Category.EventsAndBattles].Add(
+            QuestionDecks[Category.EventsAndBattles].Enqueue(
                 new Card(
                     Category.EventsAndBattles,
                     "Who killed Darth Maul in their final duel?",
                     new List<string> { "Qui-Gon Jinn", "Yoda", "Anakin Skywalker", "Obi-Wan Kenobi" },
                     "Obi-Wan Kenobi"
                 ));
-            QuestionDecks[Category.EventsAndBattles].Add(
+            QuestionDecks[Category.EventsAndBattles].Enqueue(
                 new Card(
                     Category.EventsAndBattles,
                     "Which battle led to the destruction of the second Death Star?",
@@ -252,21 +313,21 @@ namespace Pursuit_of_Trivia
 
 
 
-            QuestionDecks[Category.QuotesAndLore].Add(
+            QuestionDecks[Category.QuotesAndLore].Enqueue(
                 new Card(
                     Category.QuotesAndLore,
                     "Who said I find your lack of faith disturbing?",
                     new List<string> { "Emperor Palpatine", "Grand Moff Tarkin", "Darth Vader", "Count Dooku" },
                     "Darth Vader"
                 ));
-            QuestionDecks[Category.QuotesAndLore].Add(
+            QuestionDecks[Category.QuotesAndLore].Enqueue(
                 new Card(
                     Category.QuotesAndLore,
                     "According to Yoda, what does fear lead to?",
                     new List<string> { "Suffering", "Hate", "Anger", "Darkness" },
                     "Anger"
                 ));
-            QuestionDecks[Category.QuotesAndLore].Add(
+            QuestionDecks[Category.QuotesAndLore].Enqueue(
                 new Card(
                     Category.QuotesAndLore,
                     "What were Obi-Wan Kenobi's final words to Darth Vader before his death?",
@@ -274,6 +335,20 @@ namespace Pursuit_of_Trivia
                     "If you strike me down, I shall become more powerful than you can possibly imagine."
                 ));
             
+        }
+
+        /// <summary>
+        /// Shuffles the deck of cards for the specified category.
+        /// </summary>
+        /// <remarks>If the deck for the specified category is empty, no action is performed.</remarks>
+        /// <param name="category">The category of the deck to shuffle. Must correspond to an existing deck in <see cref="QuestionDecks"/>.</param>
+        public void ShuffleDeck(Category category)
+        {
+            if (QuestionDecks[category].Count > 0)
+            {
+                var shuffledCards = QuestionDecks[category].Shuffle();
+                QuestionDecks[category] = new Queue<Card>(shuffledCards);
+            }
         }
 
     }
