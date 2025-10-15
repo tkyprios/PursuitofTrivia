@@ -14,6 +14,8 @@ namespace Pursuit_of_Trivia
     {
         public Table GameTable { get; set; }
 
+        private const int REQ_SCORE_PER_CATEGORY = 3;
+
         /// <summary>
         /// Constructor for the Game class, initializes the game table with a master deck of questions covering all categories.
         /// </summary>
@@ -321,11 +323,20 @@ namespace Pursuit_of_Trivia
 
         private void DisplayScores()
         {
-            throw new NotImplementedException();
+            // Iterate through players
+            foreach (Player player in GameTable.Players)
+            {
+                Console.WriteLine($"Player: {player.Name}");
+                Console.WriteLine("Scores per category: ");
+                foreach (Category category in Enum.GetValues(typeof(Category)))
+                {
+                    int currentCategoryScore = player.GetCategoryScore(category);
 
-            // Each player's category scores
-            // Cards earned
-            // Progress towards winning
+                    Console.WriteLine($"{category}: {currentCategoryScore} / {REQ_SCORE_PER_CATEGORY}");
+                }
+            }
+
+
         }
 
 
