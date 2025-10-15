@@ -77,7 +77,7 @@ namespace Pursuit_of_Trivia
 
             while (!turnComplete)
             {
-                DisplayTurnOptions(); // Should this be in this function or in a StartGame()?
+                DisplayTurnOptions();
 
                 if (!int.TryParse(Console.ReadLine(), out int playerSelection))
                 {
@@ -116,6 +116,11 @@ namespace Pursuit_of_Trivia
 
         }
 
+
+        /// <summary>
+        /// Determines whether a valid question category has been selected by the user and if it has, proceeds to ask a question for that category.
+        /// </summary>
+        /// <returns> A boolean value on whether a value category has been selected. </returns>
         private bool HandleTriviaQuestion()
         {
             var category = SelectCategory(); // category is of type 'Category?'
@@ -188,7 +193,11 @@ namespace Pursuit_of_Trivia
         }
 
         
-
+        /// <summary>
+        /// Begins presentation of question, through drawing a card and presenting to current player. Finally validates the player's answer.
+        /// </summary>
+        /// <param name="category"> The category to draw the question from. </param>
+        /// <exception cref="InvalidOperationException"> Throws if no card could be sourced. </exception>
         private void PlayTriviaQuestion(Category category)
         {
             if (GameTable.MasterQuestionDeck.IsDeckEmpty(category))
@@ -201,7 +210,7 @@ namespace Pursuit_of_Trivia
 
             if (card != null)
             {
-                DisplayQuestionAndChoices(card, category);
+                DisplayQuestionAndChoices(card);
                 ProcessAnswer(card, player);
             }
 
@@ -213,10 +222,14 @@ namespace Pursuit_of_Trivia
 
         }
 
-        private void DisplayQuestionAndChoices(Card card, Category category)
+        /// <summary>
+        /// Presents the question to the player and the potential choices.
+        /// </summary>
+        /// <param name="card"> The card that contains the question to be displayed. </param>
+        private void DisplayQuestionAndChoices(Card card)
         {
             Console.Clear();
-            Console.WriteLine($"Category: {category}");
+            Console.WriteLine($"Category: {card.QuestionCategory}");
             Console.WriteLine($"Question: {card.QuestionText}\n");
 
             for (int i = 0; i < card.Choices.Count; i++)
@@ -225,6 +238,15 @@ namespace Pursuit_of_Trivia
             }
         }
 
+        /// <summary>
+        /// Validates/checks the answer that the player provides. 
+        /// </summary>
+        /// <remarks> First attempts to read the answer the player provides and checks if it is a valid letter.
+        /// Then converts the letter value to an index using ASCII arithmetic relative to the letter 'A'.
+        /// Then checks the answer.
+        /// </remarks>
+        /// <param name="card"></param>
+        /// <param name="player"></param>
         private void ProcessAnswer(Card card, Player player)
         {
             while (true)
@@ -265,6 +287,11 @@ namespace Pursuit_of_Trivia
 
         }
 
+        /// <summary>
+        /// Checks if a given input is a valid letter choice (A-D)
+        /// </summary>
+        /// <param name="letter"> The letter to output to. </param>
+        /// <returns> True if a valid letter choice, false if not. </returns>
         private bool TryGetLetterChoice(out char letter)
         {
             // Validate user input is a valid letter choice
@@ -276,9 +303,9 @@ namespace Pursuit_of_Trivia
             if (string.IsNullOrEmpty(input) || input.Length != 1)
                 return false;
 
-            letter = input[0]; // then let letter be the input
+            letter = input[0]; // then assign input to the letter.
 
-            return letter <= 'A' && letter <= 'D'; // check if input is a valid letter
+            return letter <= 'A' && letter <= 'D'; // check if input is a valid letter.
         }
 
         private void DisplayCategoryOptions()
