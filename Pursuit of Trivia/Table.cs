@@ -31,6 +31,7 @@ namespace Pursuit_of_Trivia
             Console.WriteLine($"Player {player.Name} has been added to the game!");
             Console.WriteLine("Press any key to continue...");
             Console.ReadKey(true);
+            Console.WriteLine();
         }
 
         public void AddBotToGame()
@@ -40,6 +41,7 @@ namespace Pursuit_of_Trivia
             Console.WriteLine("A bot has been added to the game!");
             Console.WriteLine("Press any key to continue...");
             Console.ReadKey(true);
+            Console.WriteLine();
         }
 
         /// <summary>

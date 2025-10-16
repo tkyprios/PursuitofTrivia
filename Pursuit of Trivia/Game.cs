@@ -60,20 +60,45 @@ namespace Pursuit_of_Trivia
 
             while (gameRunning)
             {
-                ProcessTurn();
-
-                // Check win condition
-
-                // Handle game end
+                gameRunning = !ProcessTurn();
             }
+
+            Console.Clear();
+
+            var currentPlayer = GameTable.GetCurrentPlayer();
+            Console.WriteLine($"{currentPlayer.Name} has won! Congrats!");
+            Console.WriteLine("You are officially a Star Wars Nerd!");
+            Console.WriteLine("Go boast to all your friends.");
+
+            Console.WriteLine();
+
+
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine("Would you like to play another round? (Y/N)");
+                if (!TryGetYesNoChoice(out char selection))
+                {
+                    Console.WriteLine("Please enter a valid choice.");
+                    Console.ReadKey();
+                    continue;
+                }
+
+                if (selection == 'N')
+                    Environment.Exit(0);
+                else
+                    SetupPlayers();
+
+            }
+
         }
 
 
-        private void ProcessTurn()
+        private bool ProcessTurn()
         {
             Console.Clear();
             var currentPlayer = GameTable.GetCurrentPlayer();
-            Console.WriteLine($"It's {currentPlayer}'s turn!");
+            Console.WriteLine($"It's {currentPlayer.Name}'s turn!");
 
             bool turnComplete = false;
 
@@ -93,12 +118,13 @@ namespace Pursuit_of_Trivia
                     case 0:
                         Console.WriteLine($"Player {currentPlayer} has forfeited. Exiting game...");
                         Environment.Exit(0); // use of gameRunning?
-                        return;
+                        return false;
                     case 1:   
                         if (HandleTriviaQuestion()) turnComplete = true;
                         break;
                     case 2:
                         DisplayScores();
+                        
                         break;
                     //case 3:
                     //  HandleStealCard()
@@ -111,9 +137,14 @@ namespace Pursuit_of_Trivia
                 }
             }
 
-            // CHECK WINNING CONDITION
+            if (currentPlayer.HasWon(REQ_SCORE_PER_CATEGORY))
+            {
+                return true;
+            }
+            
 
             GameTable.GetNextPlayer();
+            return false; // Game continues
 
 
         }
@@ -166,32 +197,6 @@ namespace Pursuit_of_Trivia
                 return (Category)selection; // because selection is an int
 
             }
-        }
-
-        /// <summary>
-        /// Attempts to get a valid category selection from the player.
-        /// </summary>
-        /// <param name="category">When this method returns, contains the selected Category if input was valid, 
-        /// or 0 if the player chose to return.</param>
-        /// <returns>true if the input was valid; otherwise, false.</returns>
-        private bool TryGetCategorySelection(out int category)
-        {
-            category = 0;
-            var input = Console.ReadLine();
-
-            // First check if we can parse the input as a number
-            if (!int.TryParse(input, out category))
-            {
-                return false;
-            }
-
-            // Check if it's a valid category number or the return option (0)
-            if (category == 0 || Enum.IsDefined(typeof(Category), category))
-            {
-                return true;
-            }
-
-            return false;
         }
 
         
@@ -290,6 +295,32 @@ namespace Pursuit_of_Trivia
         }
 
         /// <summary>
+        /// Attempts to get a valid category selection from the player.
+        /// </summary>
+        /// <param name="category">When this method returns, contains the selected Category if input was valid, 
+        /// or 0 if the player chose to return.</param>
+        /// <returns>true if the input was valid; otherwise, false.</returns>
+        private bool TryGetCategorySelection(out int category)
+        {
+            category = 0;
+            var input = Console.ReadLine();
+
+            // First check if we can parse the input as a number
+            if (!int.TryParse(input, out category))
+            {
+                return false;
+            }
+
+            // Check if it's a valid category number or the return option (0)
+            if (category == 0 || Enum.IsDefined(typeof(Category), category))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Checks if a given input is a valid letter choice (A-D)
         /// </summary>
         /// <param name="letter"> The letter to output to. </param>
@@ -307,7 +338,23 @@ namespace Pursuit_of_Trivia
 
             letter = input[0]; // then assign input to the letter.
 
-            return letter <= 'A' && letter <= 'D'; // check if input is a valid letter.
+            return letter >= 'A' && letter <= 'D'; // check if input is a valid letter.
+        }
+
+        private bool TryGetYesNoChoice(out char ynletter)
+        {
+            // Validate user input is a valid letter choice
+            ynletter = '\0'; // null/invalid character for default
+
+            var input = Console.ReadLine()?.Trim().ToUpper();
+
+            // Check if input is exactly one character
+            if (string.IsNullOrEmpty(input) || input.Length != 1)
+                return false;
+
+            ynletter = input[0]; // then assign input to the letter.
+
+            return ynletter == 'Y' && ynletter == 'N'; // check if input is a valid letter.
         }
 
         /// <summary>
@@ -336,6 +383,7 @@ namespace Pursuit_of_Trivia
         /// based on the player's progress toward the required score for each category.</remarks>
         private void DisplayScores()
         {
+            Console.Clear();
             // Iterate through players
             foreach (Player player in GameTable.Players)
             {
@@ -362,6 +410,10 @@ namespace Pursuit_of_Trivia
                 }
                 Console.WriteLine(); // Add a line of space between plyers
             }
+
+            Console.WriteLine("Press any key to return to turn options...");
+            Console.ReadKey(true);
+            Console.Clear();
 
 
         }
