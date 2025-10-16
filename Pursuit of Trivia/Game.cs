@@ -310,6 +310,12 @@ namespace Pursuit_of_Trivia
             return letter <= 'A' && letter <= 'D'; // check if input is a valid letter.
         }
 
+        /// <summary>
+        /// Displays the available question categories and their remaining card counts to the console.
+        /// </summary>
+        /// <remarks>This method lists all categories defined in the <see cref="Category"/> enumeration,
+        /// along with the number of  remaining questions for each category in the master question deck. It also
+        /// provides an option to return or go back.</remarks>
         private void DisplayCategoryOptions()
         {
             Console.WriteLine("What question category would you like to draw?");
@@ -321,6 +327,13 @@ namespace Pursuit_of_Trivia
             Console.WriteLine("0. Return/Back");
         }
 
+
+        /// <summary>
+        /// Displays the scores of all players in the game, categorized by scoring categories.
+        /// </summary>
+        /// <remarks>This method iterates through all players in the game and outputs their scores for
+        /// each category. Scores are displayed in a formatted manner, with progress highlighted in different colors
+        /// based on the player's progress toward the required score for each category.</remarks>
         private void DisplayScores()
         {
             // Iterate through players
@@ -332,8 +345,22 @@ namespace Pursuit_of_Trivia
                 {
                     int currentCategoryScore = player.GetCategoryScore(category);
 
-                    Console.WriteLine($"{category}: {currentCategoryScore} / {REQ_SCORE_PER_CATEGORY}");
+                    string progressText = $"{currentCategoryScore} / {REQ_SCORE_PER_CATEGORY}";
+                    Console.Write($"{category}: ");
+
+                    ConsoleColor progressColor;
+                    // Colour based on progress
+                    if (currentCategoryScore >= REQ_SCORE_PER_CATEGORY)
+                        progressColor = ConsoleColor.Green;      // Completed
+                    else if (currentCategoryScore == REQ_SCORE_PER_CATEGORY - 1)
+                        progressColor = ConsoleColor.DarkYellow; // One step away
+                    else
+                        progressColor = ConsoleColor.Gray;
+
+                    WriteTextWithColour($"{currentCategoryScore} / {REQ_SCORE_PER_CATEGORY}\n", progressColor); // colour the progress
+
                 }
+                Console.WriteLine(); // Add a line of space between plyers
             }
 
 
@@ -350,6 +377,21 @@ namespace Pursuit_of_Trivia
             Console.WriteLine("0. Forfeit/Quit");
         }
 
+
+        /// <summary>
+        /// Writes the specified text to the console in the specified color.
+        /// </summary>
+        /// <remarks>After the text is written, the console's foreground color is restored to its original
+        /// value.</remarks>
+        /// <param name="text">The text to write to the console. If null, no text is written.</param>
+        /// <param name="colour">The <see cref="ConsoleColor"/> to use for the text.</param>
+        private void WriteTextWithColour(string text, ConsoleColor colour)
+        {
+            ConsoleColor originalColour = Console.ForegroundColor; // save the current colour
+            Console.ForegroundColor = colour; // change colour
+            Console.Write(text);
+            Console.ForegroundColor = originalColour;
+        }
 
 
 
