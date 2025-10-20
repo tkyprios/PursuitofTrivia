@@ -55,44 +55,33 @@ namespace Pursuit_of_Trivia
 
         public void StartGame()
         {
-            SetupPlayers();
-            bool gameRunning = true;
 
-            while (gameRunning)
+            bool playAgain;
+            do
             {
-                gameRunning = !ProcessTurn();
-            }
+                SetupPlayers();
+                bool gameRunning = true;
 
-            Console.Clear();
-
-            var currentPlayer = GameTable.GetCurrentPlayer();
-            Console.WriteLine($"{currentPlayer.Name} has won! Congrats!");
-            Console.WriteLine("You are officially a Star Wars Nerd!");
-            Console.WriteLine("Go boast to all your friends.");
-
-            Console.WriteLine();
-
-
-            while (true)
-            {
-                Console.Clear();
-                Console.WriteLine("Would you like to play another round? (Y/N)");
-                if (!TryGetYesNoChoice(out char selection))
+                while (gameRunning)
                 {
-                    Console.WriteLine("Please enter a valid choice.");
-                    Console.ReadKey();
-                    continue;
+                    gameRunning = !ProcessTurn();
                 }
 
-                if (selection == 'N')
-                    Environment.Exit(0);
-                else
-                    SetupPlayers();
+                DisplayWinMessage();
 
-            }
+                playAgain = PromptPlayAgain();
+
+                if (playAgain)
+                {
+                    GameTable = new Table(new Deck(GetAllQuestionCategories())); // reset game
+                }
+                else
+                {
+                    ExitGame();
+                }
+            } while (playAgain);
 
         }
-
 
         private bool ProcessTurn()
         {
@@ -116,9 +105,14 @@ namespace Pursuit_of_Trivia
                 switch (playerSelection)
                 {
                     case 0:
-                        Console.WriteLine($"Player {currentPlayer} has forfeited. Exiting game...");
-                        Environment.Exit(0); // use of gameRunning?
-                        return false;
+                        Console.WriteLine($"Player {currentPlayer} is considering forefeit.");
+                        if (ConfirmAction("Are you sure you want to forfeit? (Y/N)"))
+                        {
+                            ExitGame();
+                            return true;
+                        }
+                        Console.Clear();
+                        break;
                     case 1:   
                         if (HandleTriviaQuestion()) turnComplete = true;
                         break;
@@ -341,10 +335,10 @@ namespace Pursuit_of_Trivia
             return letter >= 'A' && letter <= 'D'; // check if input is a valid letter.
         }
 
-        private bool TryGetYesNoChoice(out char ynletter)
+        private bool TryGetYesNoChoice(out char ynLetter)
         {
             // Validate user input is a valid letter choice
-            ynletter = '\0'; // null/invalid character for default
+            ynLetter = '\0'; // null/invalid character for default
 
             var input = Console.ReadLine()?.Trim().ToUpper();
 
@@ -352,9 +346,29 @@ namespace Pursuit_of_Trivia
             if (string.IsNullOrEmpty(input) || input.Length != 1)
                 return false;
 
-            ynletter = input[0]; // then assign input to the letter.
+            ynLetter = input[0]; // then assign input to the letter.
 
-            return ynletter == 'Y' && ynletter == 'N'; // check if input is a valid letter.
+            return ynLetter == 'Y' || ynLetter == 'N'; // check if input is a valid letter.
+        }
+
+        /// <summary>
+        /// Prompts the user to confirm an action by entering 'Y' or 'N'.
+        /// </summary>
+        /// <remarks>The method repeatedly prompts the user until a valid input ('Y' or 'N') is
+        /// provided.</remarks>
+        /// <param name="prompt">The message displayed to the user to request confirmation.</param>
+        /// <returns><see langword="true"/> if the user confirms the action by entering 'Y'; otherwise, <see langword="false"/>.</returns>
+        private bool ConfirmAction(string prompt)
+        {
+            while (true)
+            {
+                Console.WriteLine(prompt);
+                if (TryGetYesNoChoice(out char choice))
+                {
+                    return choice == 'Y';
+                }
+                Console.WriteLine("Please enter Y or N.");
+            }
         }
 
         /// <summary>
@@ -418,8 +432,11 @@ namespace Pursuit_of_Trivia
 
         }
 
-
-
+        /// <summary>
+        /// Displays the available options for the player's turn in the game.
+        /// </summary>
+        /// <remarks>The options presented include drawing a question card, showing scores, stealing an
+        /// opponent's card, or forfeiting the game.</remarks>
         private void DisplayTurnOptions()
         {
             Console.WriteLine($"What would you like to do?");
@@ -427,6 +444,48 @@ namespace Pursuit_of_Trivia
             Console.WriteLine("2. Show Scores");
             Console.WriteLine("3. Steal an Opponent's Card");
             Console.WriteLine("0. Forfeit/Quit");
+        }
+
+        /// <summary>
+        /// Displays a congratulatory message for the winning player.
+        /// </summary>
+        /// <remarks>This method clears the console and outputs a message indicating the winner of the
+        /// game. It is intended to be called when the game concludes with a winner.</remarks>
+        private void DisplayWinMessage()
+        {
+            Console.Clear();
+
+            // Reach here when game is exited
+            var winner = GameTable.GetCurrentPlayer();
+            Console.WriteLine($"{winner.Name} has won! Congrats!");
+            Console.WriteLine("You are officially a Star Wars Nerd!");
+            Console.WriteLine("Go boast to all your friends.");
+        }
+
+        /// <summary>
+        /// Prompts the user to decide whether to play another round.
+        /// </summary>
+        /// <remarks>Displays a message asking the user to enter 'Y' for yes or 'N' for no.  The method
+        /// continues prompting until a valid input is provided.</remarks>
+        /// <returns><see langword="true"/> if the user chooses to play another round; otherwise, <see langword="false"/>.</returns>
+        private bool PromptPlayAgain()
+        {
+            do
+            {
+                Console.Clear();
+                Console.WriteLine("Would you like to play another round? (Y/N)");
+
+                if (TryGetYesNoChoice(out char selection))
+                {
+                    return selection == 'Y';
+                }
+
+                Console.WriteLine("Please enter a valid choice (Y/N).");
+
+                Console.ReadKey();
+
+            } while (true);
+            
         }
 
 
@@ -445,6 +504,21 @@ namespace Pursuit_of_Trivia
             Console.ForegroundColor = originalColour;
         }
 
+
+
+        /// <summary>
+        /// Exits the game and displays a farewell message to the user.
+        /// </summary>
+        /// <remarks>Clears the console, displays a thank-you message, and prompts the user to press any
+        /// key before exiting.</remarks>
+        private void ExitGame()
+        {
+            Console.Clear();
+            Console.WriteLine("Thanks for playing Pursuit of Trivia!");
+            Console.WriteLine("May the Force be with you!");
+            Console.WriteLine("\nPress any key to exit...");
+            Console.ReadKey(true);
+        }
 
 
     }
