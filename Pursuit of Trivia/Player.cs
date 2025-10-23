@@ -54,7 +54,7 @@ namespace Pursuit_of_Trivia
         /// <param name="card">The card to remove. The card must not be <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the card was successfully removed; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentException">Thrown if <paramref name="card"/> is <see langword="null"/>.</exception>
-        public bool RemoveCard(Card card)
+        private bool RemoveCard(Card card)
         {
             if (card == null)
                 throw new ArgumentException($"{nameof(card)} cannot be null.");
@@ -67,6 +67,49 @@ namespace Pursuit_of_Trivia
 
             return false;
 
+        }
+
+        /// <summary>
+        /// Transfers a random card from the specified category to the given player.
+        /// </summary>
+        /// <remarks>If the current player does not own any cards in the specified category, no card is
+        /// transferred, and the method returns <see langword="false"/>.</remarks>
+        /// <param name="category">The category of cards to transfer from. </param>
+        /// <param name="receivingPlayer">The player who will receive the transferred card.</param>
+        /// <returns><see langword="true"/> if a card was successfully transferred; otherwise, <see langword="false"/>.</returns>
+        public bool TransferRandomCard(Category category, Player receivingPlayer)
+        {
+            var ownedCategoryCards = _earnedCards
+                .Where(card => card.QuestionCategory == category)
+                .ToList();
+
+            if (!ownedCategoryCards.Any())
+                return false;
+
+            var random = new Random();
+            var cardToTransfer = ownedCategoryCards[random.Next(ownedCategoryCards.Count)];
+
+            if (RemoveCard(cardToTransfer))
+            {
+                receivingPlayer.AddCard(cardToTransfer);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Retrieves a list of categories that meet or exceed the specified score threshold.
+        /// </summary>
+        /// <param name="requiredScoreToSteal">The minimum score a category must have to be considered trade-worthy.</param>
+        /// <returns>A list of <see cref="Category"/> objects representing the categories with scores  greater than or equal to
+        /// <paramref name="requiredScoreToSteal"/>. Returns an empty  list if no categories meet the threshold.</returns>
+        public List<Category> GetTradeWorthyCategories(int requiredScoreToSteal)
+        {
+            return _categoryScores
+                .Where(kvp => kvp.Value >= requiredScoreToSteal)
+                .Select(kvp => kvp.Key)
+                .ToList();
         }
 
         /// <summary>

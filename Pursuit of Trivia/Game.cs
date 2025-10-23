@@ -14,7 +14,9 @@ namespace Pursuit_of_Trivia
     {
         public Table GameTable { get; set; }
 
-        private const int REQ_SCORE_PER_CATEGORY = 3;
+        private const int REQ_SCORE_PER_CATEGORY_TO_WIN = 3;
+
+        private const int REQ_SCORE_PER_CATEGORY_TO_STEAL = REQ_SCORE_PER_CATEGORY_TO_WIN + 2;
 
         /// <summary>
         /// Constructor for the Game class, initializes the game table with a master deck of questions covering all categories.
@@ -53,6 +55,12 @@ namespace Pursuit_of_Trivia
             GameTable.AddBotToGame();
         }
 
+        /// <summary>
+        /// Starts the game loop, managing player setup, turn processing, and game state transitions.
+        /// </summary>
+        /// <remarks>This method initializes the game, processes turns until a winner is determined, and
+        /// prompts the user to decide whether to play again. If the user chooses to play again, the game state is
+        /// reset; otherwise, the game exits.</remarks>
         public void StartGame()
         {
 
@@ -118,12 +126,10 @@ namespace Pursuit_of_Trivia
                         break;
                     case 2:
                         DisplayScores();
-                        
                         break;
-                    //case 3:
-                    //  HandleStealCard()
-                    //  turnComplete = true;
-                    //  break;
+                    case 3:
+                        if (HandleStealingTurn(currentPlayer)) turnComplete = true;
+                        break;
                     default:
                         Console.WriteLine("Invalid input. Press Enter to try again.");
                         Console.ReadLine();
@@ -131,7 +137,7 @@ namespace Pursuit_of_Trivia
                 }
             }
 
-            if (currentPlayer.HasWon(REQ_SCORE_PER_CATEGORY))
+            if (currentPlayer.HasWon(REQ_SCORE_PER_CATEGORY_TO_WIN))
             {
                 return true;
             }
@@ -278,6 +284,14 @@ namespace Pursuit_of_Trivia
                 {
                     Console.WriteLine($"Incorrect! {player.Name} failed to earn this card. Returning to bottom of deck...");
                     GameTable.MasterQuestionDeck.ReturnCardToBottom(card);
+
+                    var receivingPlayer = GameTable.GetRandomOtherPlayer(); // the lucky player to steal a card from the player who answered incorrect.
+
+                    Console.WriteLine($"The lucky player {receivingPlayer.Name} gets to draw a random card from {player.Name}'s {card.QuestionCategory} collection.");
+
+                    HandleStealCard(player, card.QuestionCategory, receivingPlayer);
+
+
                 }
 
                 Console.WriteLine("\nPress any key to end turn...");
@@ -286,6 +300,172 @@ namespace Pursuit_of_Trivia
             }
             
 
+        }
+
+        /// <summary>
+        /// Handles the action of one player attempting to steal a random card from another player's collection within a
+        /// specified category.
+        /// </summary>
+        /// <remarks>If the <paramref name="losingPlayer"/> has no cards in the specified <paramref
+        /// name="questionCategory"/>,  no card is transferred, and the operation is considered unsuccessful.</remarks>
+        /// <param name="losingPlayer">The player from whom the card is being stolen.</param>
+        /// <param name="questionCategory">The category of the card to be stolen. The card will be randomly selected from the losing player's
+        /// collection in this category.</param>
+        /// <param name="receivingPlayer">The player who will receive the stolen card, if the losing player has a card in the specified category.</param>
+        private void HandleStealCard(Player losingPlayer, Category questionCategory, Player receivingPlayer)
+        {
+
+            if (losingPlayer.TransferRandomCard(questionCategory, receivingPlayer))
+            {
+                Console.WriteLine($"{receivingPlayer.Name} stole a {questionCategory} card from {losingPlayer.Name}!");
+            }
+            else
+            {
+                Console.WriteLine($"{losingPlayer.Name} has no {questionCategory} cards to steal. How disappointing.)");
+            }
+        }
+
+        /// <summary>
+        /// Handles the process of allowing the current player to attempt to steal a card from another player for their turn.
+        /// </summary>
+        /// <remarks>This method involves selecting a category to steal from and a target player to steal
+        /// from. If either selection is invalid or not made, the method returns <see langword="false"/>. Otherwise, the
+        /// steal attempt is processed.</remarks>
+        /// <param name="currentPlayer">The player whose turn it is to attempt the steal.</param>
+        /// <returns><see langword="true"/> if the steal attempt was initiated successfully; otherwise, <see langword="false"/>
+        /// if the steal could not be attempted (e.g., no valid category or user returned to menu).</returns>
+        private bool HandleStealingTurn(Player currentPlayer)
+        {
+            // Check if player has any categories with enough cards
+            var categoryToStealFrom = SelectCategoryToStealFrom(currentPlayer);
+            if (!categoryToStealFrom.HasValue)
+            {
+                return false; // has no eligible categories or chose to return to menu
+            }
+
+            var playerToStealFrom = SelectPlayerToStealFrom(currentPlayer);
+            if (playerToStealFrom == null)
+            {
+                return false; // chose to return to menu
+            }
+
+            // Attempt the steal
+            HandleStealCard(playerToStealFrom, categoryToStealFrom.Value, currentPlayer); // unwrap nullable Category type using .Value
+            return true;
+        }
+
+        /// <summary>
+        /// Prompts the player to select a category from which to steal cards, based on the categories they have with
+        /// sufficient cards to meet the required threshold.
+        /// </summary>
+        /// <remarks>A category is eligible for stealing if it contains at least the required number of
+        /// cards, as defined by the constant <c>REQ_SCORE_PER_CATEGORY_TO_STEAL</c>. If no eligible categories are
+        /// found, the method informs the player and allows them to return to the previous menu.</remarks>
+        /// <param name="currentPlayer">The player whose categories are being evaluated for stealing eligibility.</param>
+        /// <returns>The selected <see cref="Category"/> to steal from, or <see langword="null"/> if the player chooses to return
+        /// without making a selection or if no categories meet required score.</returns>
+        private Category? SelectCategoryToStealFrom(Player currentPlayer)
+        {
+
+            List<Category> categoriesWithSufficientCardsToSteal = currentPlayer.GetTradeWorthyCategories(REQ_SCORE_PER_CATEGORY_TO_STEAL);
+
+            if (!categoriesWithSufficientCardsToSteal.Any())
+            {
+                Console.WriteLine($"You need at least {REQ_SCORE_PER_CATEGORY_TO_STEAL} cards in a category to steal from another player!");
+                Console.WriteLine("Press any key to return to turn options...");
+                Console.ReadKey(true);
+                return null;
+            }
+
+            int selection;
+            do
+            {
+                Console.Clear();
+                Console.WriteLine("Which category would you like to steal?");
+                for (int i = 0; i < categoriesWithSufficientCardsToSteal.Count; i++)
+                {
+                    Console.WriteLine($"{i + 1}. {categoriesWithSufficientCardsToSteal[i]}");
+                }
+
+                Console.WriteLine("0. Return/Back");
+
+                // Validate input
+                if (!int.TryParse(Console.ReadLine(), out selection))
+                {
+                    Console.WriteLine("Please enter a valid number.");
+                    Console.ReadKey();
+                    continue;
+                }
+
+
+                // Check if selection is valid
+                if (selection == 0)
+                    return null;
+
+                if (selection > 0 && selection <= categoriesWithSufficientCardsToSteal.Count)
+                    return categoriesWithSufficientCardsToSteal[selection - 1]; // the player to steal from
+
+                Console.WriteLine("Invalid selection. Press any key to try again.");
+                Console.ReadKey(true);
+            } while (true);
+
+            
+
+        }
+
+        /// <summary>
+        /// Prompts the current player to select an opponent to steal a card from.
+        /// </summary>
+        /// <remarks>This method displays a list of opponents (excluding the current player) and allows
+        /// the current player to make a selection. The method ensures that the input is validated and prompts the
+        /// player to try again if an invalid selection is made.</remarks>
+        /// <param name="currentPlayer">The player making the selection. This player will not appear in the list of options.</param>
+        /// <returns>The selected opponent to steal a card from, or <see langword="null"/> if the player chooses to return
+        /// without making a selection.</returns>
+        private Player SelectPlayerToStealFrom(Player currentPlayer)
+        {
+            var opponents = GameTable.Players
+                .Where(player => player != currentPlayer)
+                .ToList();
+
+            int selection;
+            do
+            {
+                Console.Clear();
+
+                Console.WriteLine("Who would you like to steal a card from?");
+
+                for (int i = 0; i < opponents.Count; i++)
+                {
+                    Console.WriteLine($"{i + 1}. {opponents[i].Name}");
+                }
+
+                Console.WriteLine("0. Return/Back");
+
+                // Validate input
+                if (!int.TryParse(Console.ReadLine(), out selection))
+                {
+                    Console.WriteLine("Please enter a valid number.");
+                    Console.ReadKey();
+                    continue;
+                }
+
+                // Check if selection is valid
+                if (selection == 0)
+                    return null;
+
+                if (selection > 0 && selection <= opponents.Count)
+                    return opponents[selection - 1]; // the player to steal from
+
+                Console.WriteLine("Invalid selection. Press any key to try again.");
+                Console.ReadKey(true);
+            } while (true);
+
+            
+
+
+
+            
         }
 
         /// <summary>
@@ -407,19 +587,19 @@ namespace Pursuit_of_Trivia
                 {
                     int currentCategoryScore = player.GetCategoryScore(category);
 
-                    string progressText = $"{currentCategoryScore} / {REQ_SCORE_PER_CATEGORY}";
+                    string progressText = $"{currentCategoryScore} / {REQ_SCORE_PER_CATEGORY_TO_WIN}";
                     Console.Write($"{category}: ");
 
                     ConsoleColor progressColor;
                     // Colour based on progress
-                    if (currentCategoryScore >= REQ_SCORE_PER_CATEGORY)
+                    if (currentCategoryScore >= REQ_SCORE_PER_CATEGORY_TO_WIN)
                         progressColor = ConsoleColor.Green;      // Completed
-                    else if (currentCategoryScore == REQ_SCORE_PER_CATEGORY - 1)
+                    else if (currentCategoryScore == REQ_SCORE_PER_CATEGORY_TO_WIN - 1)
                         progressColor = ConsoleColor.DarkYellow; // One step away
                     else
                         progressColor = ConsoleColor.Gray;
 
-                    WriteTextWithColour($"{currentCategoryScore} / {REQ_SCORE_PER_CATEGORY}\n", progressColor); // colour the progress
+                    WriteTextWithColour($"{currentCategoryScore} / {REQ_SCORE_PER_CATEGORY_TO_WIN}\n", progressColor); // colour the progress
 
                 }
                 Console.WriteLine(); // Add a line of space between plyers

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pursuit_of_Trivia.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,6 +18,8 @@ namespace Pursuit_of_Trivia
         public Deck MasterQuestionDeck { get; private set; }
 
         private int currentPlayerIndex = 0; // tracks current player, initialize to 0
+
+        private static readonly Random _random = new Random();
 
 
         public Table(Deck masterQuestionDeck)
@@ -51,6 +54,24 @@ namespace Pursuit_of_Trivia
         public Player GetCurrentPlayer()
         {
             return Players[currentPlayerIndex];
+        }
+
+        /// <summary>
+        /// Gets a random player that is not the current player.
+        /// </summary>
+        /// <returns>A random <see cref="Player"/> that is different from the current player, 
+        /// or null if there are no other players available.</returns>
+        public Player GetRandomOtherPlayer()
+        {
+            if (Players.Count <= 1)
+            {
+                return null;
+            }
+
+            // With small list of players (max 4), simple offset approach is more efficient
+            int offset = _random.Next(1, Players.Count);
+            int targetIndex = (currentPlayerIndex + offset) % Players.Count;
+            return Players[targetIndex];
         }
 
         /// <summary>
