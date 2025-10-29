@@ -27,7 +27,7 @@ namespace Pursuit_of_Trivia
             _gameTable = new Table(new Deck(GetAllQuestionCategories()));
             _inputHandler = new ConsoleInputHandler();
             _gameUI = new ConsoleGameUI(_gameTable, _inputHandler);
-            _turnManager = new TurnManager(_gameTable);
+            _turnManager = new TurnManager(_gameTable, _gameUI, _inputHandler);
         }
 
         /// <summary>
@@ -80,17 +80,29 @@ namespace Pursuit_of_Trivia
 
                 while (gameRunning)
                 {
-                    gameRunning = !_turnManager.ProcessTurn();
+                    var turnResult = _turnManager.ProcessTurn();
+                    switch (turnResult)
+                    {
+                        case TurnManager.TurnResult.Exit:
+                            ExitGame();
+                            return;
+                        case TurnManager.TurnResult.GameWon:
+                            gameRunning = false; // exit loop
+                            break;
+                        case TurnManager.TurnResult.Continue:
+                            break; // continue game
+                    }
                 }
 
-                _gameUI.DisplayWinMessage();
+                // Flow will only occur when there is a winner and game is ended.
+                var winner = _gameTable.GetCurrentPlayer();
+                _gameUI.DisplayWinMessage(winner);
 
                 playAgain = _gameUI.PromptPlayAgain();
 
                 if (playAgain)
                 {
-                    _gameTable = new Table(new Deck(GetAllQuestionCategories())); // reset game
-                    _turnManager = new TurnManager(_gameTable);
+                    ResetGame();
                 }
                 else
                 {
@@ -99,7 +111,18 @@ namespace Pursuit_of_Trivia
             } while (playAgain);
 
         }
-       
+
+        /// <summary>
+        /// Resets the game to its initial state, preparing a new game session.
+        /// </summary>
+        /// <remarks>This method initializes a new game table with a fresh deck of questions and resets
+        /// the turn manager. It should be called to start a new game or restart after a game session ends.</remarks>
+        private void ResetGame()
+        {
+            _gameTable = new Table(new Deck(GetAllQuestionCategories()));
+            _turnManager = new TurnManager(_gameTable, _gameUI, _inputHandler);
+        }
+
 
         /// <summary>
         /// Exits the game and displays a farewell message to the user.

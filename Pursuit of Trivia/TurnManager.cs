@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Pursuit_of_Trivia.Configuration;
+using Pursuit_of_Trivia.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,18 +11,31 @@ namespace Pursuit_of_Trivia
     internal class TurnManager
     {
         private readonly Table _gameTable;
-        //private const int REQ_SCORE_PER_CATEGORY_TO_WIN = 3;
-        //private const int REQ_SCORE_PER_CATEGORY_TO_STEAL = REQ_SCORE_PER_CATEGORY_TO_WIN + 2;
+        private readonly IGameUI _gameUI;
+        private readonly IInputHandler _inputHandler;
 
-        public TurnManager(Table gameTable)
+        public enum TurnResult
+        {
+            Continue,
+            Exit,
+            GameWon
+        }
+       
+
+        public TurnManager(Table gameTable, IGameUI gameUI, IInputHandler inputHandler)
         {
             // Assign gameTable to _gameTable if not null. Throw ArgumentNullException if gameTable is null
             // Table is a critical dependency for TurnManager since it manaes game state including players and question deck
             _gameTable = gameTable ?? throw new ArgumentNullException(nameof(gameTable));
+
+            // Same approach for gameUI and inputHandler
+            _gameUI = gameUI ?? throw new ArgumentNullException(nameof(gameUI));
+
+            _inputHandler = inputHandler ?? throw new ArgumentNullException(nameof(inputHandler));
         }
 
 
-        public bool ProcessTurn()
+        public TurnResult ProcessTurn()
         {
             Console.Clear();
             var currentPlayer = _gameTable.GetCurrentPlayer();
@@ -30,23 +45,22 @@ namespace Pursuit_of_Trivia
 
             while (!turnComplete)
             {
-                DisplayTurnOptions();
+                _gameUI.DisplayTurnOptions();
 
                 if (!int.TryParse(Console.ReadLine(), out int playerSelection))
                 {
                     Console.WriteLine("Please enter a valid number.");
                     Console.Clear();
-                    DisplayTurnOptions();
+                    _gameUI.DisplayTurnOptions();
                 }
 
                 switch (playerSelection)
                 {
                     case 0:
                         Console.WriteLine($"Player {currentPlayer} is considering forefeit.");
-                        if (ConfirmAction("Are you sure you want to forfeit? (Y/N)"))
+                        if (_inputHandler.ConfirmYesNoAction("Are you sure you want to forfeit? (Y/N)"))
                         {
-                            ExitGame();
-                            return true;
+                            return TurnResult.Exit;
                         }
                         Console.Clear();
                         break;
@@ -54,7 +68,7 @@ namespace Pursuit_of_Trivia
                         if (HandleTriviaQuestion()) turnComplete = true;
                         break;
                     case 2:
-                        DisplayScores();
+                        _gameUI.DisplayScores();
                         break;
                     case 3:
                         if (HandleStealingTurn(currentPlayer)) turnComplete = true;
@@ -66,14 +80,14 @@ namespace Pursuit_of_Trivia
                 }
             }
 
-            if (currentPlayer.HasWon(REQ_SCORE_PER_CATEGORY_TO_WIN))
+            if (currentPlayer.HasWon(GameSettings.Scoring.REQ_SCORE_PER_CATEGORY_TO_WIN))
             {
-                return true;
+                return TurnResult.GameWon;
             }
 
 
             _gameTable.GetNextPlayer();
-            return false; // Game continues
+            return TurnResult.Continue; // Game continues
         }
 
 
@@ -111,9 +125,9 @@ namespace Pursuit_of_Trivia
             while (true)
             {
                 Console.Clear();
-                DisplayCategoryOptions();
+                _gameUI.DisplayCategoryOptions();
 
-                if (!TryGetCategorySelection(out int selection))
+                if (!_inputHandler.TryGetCategorySelection(out int selection))
                 {
                     Console.WriteLine("Please enter a valid category number.");
                     Console.ReadKey();
@@ -146,7 +160,7 @@ namespace Pursuit_of_Trivia
 
             if (card != null)
             {
-                DisplayQuestionAndChoices(card);
+                _gameUI.DisplayQuestionAndChoices(card);
                 ProcessAnswer(card, player);
             }
 
@@ -173,7 +187,7 @@ namespace Pursuit_of_Trivia
             {
                 Console.Write("Answer (A-D): ");
 
-                if (!TryGetLetterChoice(out char letter))
+                if (!_inputHandler.TryGetLetterChoice(out char letter))
                 {
                     Console.WriteLine("Please enter a valid letter (A-D).\n");
                     continue;
@@ -292,11 +306,11 @@ namespace Pursuit_of_Trivia
             if (currentPlayer == null)
                 throw new ArgumentNullException(nameof(currentPlayer));
 
-            List<Category> categoriesWithSufficientCardsToSteal = currentPlayer.GetTradeWorthyCategories(REQ_SCORE_PER_CATEGORY_TO_STEAL);
+            List<Category> categoriesWithSufficientCardsToSteal = currentPlayer.GetTradeWorthyCategories(GameSettings.Scoring.REQ_SCORE_PER_CATEGORY_TO_STEAL);
 
             if (!categoriesWithSufficientCardsToSteal.Any())
             {
-                Console.WriteLine($"You need at least {REQ_SCORE_PER_CATEGORY_TO_STEAL} cards in a category to steal from another player!");
+                Console.WriteLine($"You need at least {GameSettings.Scoring.REQ_SCORE_PER_CATEGORY_TO_STEAL} cards in a category to steal from another player!");
                 Console.WriteLine("Press any key to return to turn options...\n");
                 Console.ReadKey(true);
                 Console.Clear();
@@ -383,7 +397,7 @@ namespace Pursuit_of_Trivia
                         colour = ConsoleColor.Gray;
                     }
 
-                    WriteTextWithColour($"{i + 1}. {opponent.Name} (has {score} {selectedCategory} cards)\n", colour);
+                    _gameUI.WriteTextWithColour($"{i + 1}. {opponent.Name} (has {score} {selectedCategory} cards)\n", colour);
 
                     Console.WriteLine();
                 }

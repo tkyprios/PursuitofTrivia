@@ -42,7 +42,7 @@ namespace Pursuit_of_Trivia.Interfaces
         /// </summary>
         /// <remarks>This method is typically called when a win condition is met in the application. The
         /// exact content and presentation of the message may vary depending on the implementation.</remarks>
-        void DisplayWinMessage();
+        void DisplayWinMessage(Player winner);
 
         /// <summary>
         /// Displays a message to the user indicating that the application is exiting.

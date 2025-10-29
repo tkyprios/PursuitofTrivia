@@ -1,10 +1,12 @@
-﻿using Pursuit_of_Trivia.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+
+using Pursuit_of_Trivia.Interfaces;
+using Pursuit_of_Trivia.Configuration;
 
 namespace Pursuit_of_Trivia
 {
@@ -88,6 +90,8 @@ namespace Pursuit_of_Trivia
             if (_gameTable.Players == null || !_gameTable.Players.Any())
                 throw new InvalidOperationException("No players available to display scores.");
 
+            int reqScorePerCategoryToWin = GameSettings.Scoring.REQ_SCORE_PER_CATEGORY_TO_WIN;
+
             Clear();
             // Iterate through players
             foreach (Player player in _gameTable.Players)
@@ -98,19 +102,19 @@ namespace Pursuit_of_Trivia
                 {
                     int currentCategoryScore = player.GetCategoryScore(category);
 
-                    string progressText = $"{currentCategoryScore} / {REQ_SCORE_PER_CATEGORY_TO_WIN}";
+                    string progressText = $"{currentCategoryScore} / {reqScorePerCategoryToWin}";
                     Write($"{category}: ");
 
                     ConsoleColor progressColor;
                     // Colour based on progress
-                    if (currentCategoryScore >= REQ_SCORE_PER_CATEGORY_TO_WIN)
+                    if (currentCategoryScore >= reqScorePerCategoryToWin)
                         progressColor = ConsoleColor.Green;      // Completed
-                    else if (currentCategoryScore == REQ_SCORE_PER_CATEGORY_TO_WIN - 1)
+                    else if (currentCategoryScore == reqScorePerCategoryToWin - 1)
                         progressColor = ConsoleColor.DarkYellow; // One step away
                     else
                         progressColor = ConsoleColor.Gray;
 
-                    WriteTextWithColour($"{currentCategoryScore} / {REQ_SCORE_PER_CATEGORY_TO_WIN}\n", progressColor); // colour the progress
+                    WriteTextWithColour($"{currentCategoryScore} / {reqScorePerCategoryToWin}\n", progressColor); // colour the progress
 
                 }
                 WriteLine(); // Add a line of space between plyers
@@ -132,12 +136,10 @@ namespace Pursuit_of_Trivia
         /// </summary>
         /// <remarks>This method clears the console and outputs a message indicating the winner of the
         /// game. It is intended to be called when the game concludes with a winner.</remarks>
-        public void DisplayWinMessage()
+        public void DisplayWinMessage(Player winner)
         {
             Clear();
-
-            // Reach here when game is exited
-            var winner = _gameTable.GetCurrentPlayer();
+            
             WriteLine($"{winner.Name} has won! Congrats!");
             WriteLine("You are officially a Star Wars Nerd!");
             WriteLine("Go boast to all your friends.");
