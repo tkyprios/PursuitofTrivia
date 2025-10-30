@@ -7,6 +7,7 @@ using System.Xml;
 
 using Pursuit_of_Trivia.Interfaces;
 using Pursuit_of_Trivia.Configuration;
+using Pursuit_of_Trivia.Extensions;
 
 namespace Pursuit_of_Trivia
 {
@@ -36,11 +37,11 @@ namespace Pursuit_of_Trivia
         /// opponent's card, or forfeiting the game.</remarks>
         public void DisplayTurnOptions()
         {
-            WriteLine($"What would you like to do?");
-            WriteLine("1. Draw a Question Card");
-            WriteLine("2. Show Scores");
-            WriteLine("3. Steal an Opponent's Card");
-            WriteLine("0. Forfeit/Quit");
+            DisplayMessage($"What would you like to do?");
+            DisplayMessage("1. Draw a Question Card");
+            DisplayMessage("2. Show Scores");
+            DisplayMessage("3. Steal an Opponent's Card");
+            DisplayMessage("0. Forfeit/Quit");
         }
 
         /// <summary>
@@ -51,13 +52,13 @@ namespace Pursuit_of_Trivia
         /// provides an option to return or go back.</remarks>
         public void DisplayCategoryOptions()
         {
-            WriteLine("What question category would you like to draw?");
+            DisplayMessage("What question category would you like to draw?");
             foreach (Category category in Enum.GetValues(typeof(Category)))
             {
                 int remainingCards = _gameTable.MasterQuestionDeck.GetRemainingCardCount(category);
-                WriteLine($"{(int)category}. {category} ({remainingCards} questions in deck)");
+                DisplayMessage($"{(int)category}. {category.GetName()} ({remainingCards} questions in deck)");
             }
-            WriteLine("0. Return/Back");
+            DisplayMessage("0. Return/Back");
         }
 
         /// <summary>
@@ -70,12 +71,12 @@ namespace Pursuit_of_Trivia
                 throw new ArgumentNullException(nameof(card));
 
             Clear();
-            WriteLine($"Category: {card.QuestionCategory}");
-            WriteLine($"Question: {card.QuestionText}\n");
+            DisplayMessage($"Category: {card.QuestionCategory.GetName()}");
+            DisplayMessage($"Question: {card.QuestionText}\n");
 
             for (int i = 0; i < card.Choices.Count; i++)
             {
-                WriteLine($"{(char)('A' + i)}) {card.Choices[i]}"); // using ASCII character arithmetic, iterate through each choice
+                DisplayMessage($"{(char)('A' + i)}) {card.Choices[i]}"); // using ASCII character arithmetic, iterate through each choice
             }
         }
 
@@ -96,14 +97,14 @@ namespace Pursuit_of_Trivia
             // Iterate through players
             foreach (Player player in _gameTable.Players)
             {
-                WriteLine($"Player: {player.Name}");
-                WriteLine("Scores per category: ");
+                DisplayMessage($"Player: {player.Name}");
+                DisplayMessage("Scores per category: ");
                 foreach (Category category in Enum.GetValues(typeof(Category)))
                 {
                     int currentCategoryScore = player.GetCategoryScore(category);
 
                     string progressText = $"{currentCategoryScore} / {reqScorePerCategoryToWin}";
-                    Write($"{category}: ");
+                    Write($"{category.GetName()}: ");
 
                     ConsoleColor progressColor;
                     // Colour based on progress
@@ -117,10 +118,10 @@ namespace Pursuit_of_Trivia
                     WriteTextWithColour($"{currentCategoryScore} / {reqScorePerCategoryToWin}\n", progressColor); // colour the progress
 
                 }
-                WriteLine(); // Add a line of space between plyers
+                DisplayMessage(); // Add a line of space between plyers
             }
 
-            WriteLine("Press any key to return to turn options...");
+            DisplayMessage("Press any key to return to turn options...");
             Console.ReadKey(true);
             Clear();
         }
@@ -140,9 +141,9 @@ namespace Pursuit_of_Trivia
         {
             Clear();
             
-            WriteLine($"{winner.Name} has won! Congrats!");
-            WriteLine("You are officially a Star Wars Nerd!");
-            WriteLine("Go boast to all your friends.");
+            DisplayMessage($"{winner.Name} has won! Congrats!");
+            DisplayMessage("You are officially a Star Wars Nerd!");
+            DisplayMessage("Go boast to all your friends.");
         }
 
         /// <summary>
@@ -153,9 +154,9 @@ namespace Pursuit_of_Trivia
         public void DisplayExitMessage()
         {
             Clear();
-            WriteLine("Thanks for playing Pursuit of Trivia!");
-            WriteLine("May the Force be with you!");
-            WriteLine("\nPress any key to exit...");
+            DisplayMessage("Thanks for playing Pursuit of Trivia!");
+            DisplayMessage("May the Force be with you!");
+            DisplayMessage("\nPress any key to exit...");
             Console.ReadKey(true);
         }
 
@@ -170,14 +171,14 @@ namespace Pursuit_of_Trivia
             do
             {
                 Clear();
-                WriteLine("Would you like to play another round? (Y/N)");
+                DisplayMessage("Would you like to play another round? (Y/N)");
 
                 if (_inputHandler.TryGetYesNoChoice(out char selection))
                 {
                     return selection == 'Y';
                 }
 
-                WriteLine("Please enter a valid choice (Y/N).");
+                DisplayMessage("Please enter a valid choice (Y/N).");
 
                 Console.ReadKey();
 
@@ -190,7 +191,9 @@ namespace Pursuit_of_Trivia
 
         public void Write(string text) => Console.Write(text);
 
-        public void WriteLine(string text = "") => Console.WriteLine(text);
+        public void WriteEmptyLine() => Console.WriteLine();
+
+        public void DisplayMessage(string text = "") => Console.WriteLine(text);
         /// <summary>
         /// Writes the specified text to the console in the specified color.
         /// </summary>

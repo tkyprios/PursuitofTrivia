@@ -45,10 +45,12 @@
   <ItemGroup>
     <Compile Include="Card.cs" />
     <Compile Include="Category.cs" />
+    <Compile Include="Configuration\GameSettings.cs" />
     <Compile Include="ConsoleGameUI.cs" />
     <Compile Include="ConsoleInputHandler.cs" />
     <Compile Include="Deck.cs" />
     <Compile Include="Extensions\CollectionExtensions.cs" />
+    <Compile Include="Extensions\EnumExtensions.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="GameUI.cs" />
     <Compile Include="Interfaces\IGameUI.cs" />

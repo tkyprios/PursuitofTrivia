@@ -69,9 +69,16 @@ namespace Pursuit_of_Trivia.Interfaces
         void Clear();
 
         /// <summary>
-        /// Writes a line of text.
+        /// Writes an empty line to the output.
         /// </summary>
-        void WriteLine(string text = "");
+        /// <remarks>This method is typically used to insert a blank line for formatting
+        /// purposes.</remarks>
+        void WriteEmptyLine();
+
+        /// <summary>
+        /// Displays a message in GUI, or writes a line in Console.
+        /// </summary>
+        void DisplayMessage(string text);
 
         /// <summary>
         /// Writes text without a line break.

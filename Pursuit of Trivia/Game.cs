@@ -46,8 +46,8 @@ namespace Pursuit_of_Trivia
         {
             _gameUI.Clear();
 
-            _gameUI.WriteLine("Let's get you set up!");
-            _gameUI.WriteLine("What would you like your username to be?");
+            _gameUI.DisplayMessage("Let's get you set up!");
+            _gameUI.DisplayMessage("What would you like your username to be?");
 
             string playerUsername;
             do
@@ -55,10 +55,10 @@ namespace Pursuit_of_Trivia
                 playerUsername = Console.ReadLine()?.Trim();
             } while (string.IsNullOrWhiteSpace(playerUsername));
 
-            _gameUI.WriteLine();
+            _gameUI.DisplayMessage();
 
             var player = new Player(playerUsername);
-            _gameUI.WriteLine($"Welcome, {player.Name}!");
+            _gameUI.DisplayMessage($"Welcome, {player.Name}!");
             
             _gameTable.AddPlayerToGame(player);
             _gameTable.AddBotToGame();
