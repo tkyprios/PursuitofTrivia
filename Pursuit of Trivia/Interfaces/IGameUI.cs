@@ -59,9 +59,16 @@ namespace Pursuit_of_Trivia.Interfaces
         bool PromptPlayAgain();
 
         /// <summary>
-        /// Displays stealing-related information and options.
+        /// Displays a list of opponents and their score in a specified category.
         /// </summary>
-        void DisplayStealingOptions(IEnumerable<Player> opponents, Category selectedCategory);
+        void DisplayOpponentScoreForCategoryList(List<Player> opponents, Category selectedCategory);
+
+        /// <summary>
+        /// Displays the categories that have a sufficient number of cards available to be stolen.
+        /// </summary>
+        /// <remarks>This method identifies and displays categories where the number of cards meets the
+        /// criteria for being eligible to steal.</remarks>
+        void DisplayCategoriesWithSufficientCardsToSteal(Player player, List<Category> categoriesWithSufficientCardsToSteal);
 
         /// <summary>
         /// Clears the display.
@@ -79,6 +86,27 @@ namespace Pursuit_of_Trivia.Interfaces
         /// Displays a message in GUI, or writes a line in Console.
         /// </summary>
         void DisplayMessage(string text);
+
+        /// <summary>
+        /// Displays a validation error message to the user.
+        /// </summary>
+        void DisplayValidationError(string message);
+
+        /// <summary>
+        /// Displays the result of a player's answer, indicating whether it was correct and providing relevant details.
+        /// </summary>
+        void DisplayAnswerResult(bool isCorrect, Player player, Card card);
+
+        /// <summary>
+        /// Displays the result of a steal attempt in the game.
+        /// </summary>
+        void DisplayStealResult(bool isSuccess, Player losingPlayer, Category questionCategory, Player receivingPlayer);
+
+        /// <summary>
+        /// Pauses execution and waits for any key press from the user.
+        /// </summary>
+        /// <param name="message">Optional message to display while waiting. If null, no message is shown.</param>
+        void WaitForInput(string message = null);
 
         /// <summary>
         /// Writes text without a line break.

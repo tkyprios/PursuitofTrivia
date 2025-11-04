@@ -55,7 +55,7 @@ namespace Pursuit_of_Trivia
                 playerUsername = Console.ReadLine()?.Trim();
             } while (string.IsNullOrWhiteSpace(playerUsername));
 
-            _gameUI.DisplayMessage();
+            _gameUI.WriteEmptyLine();
 
             var player = new Player(playerUsername);
             _gameUI.DisplayMessage($"Welcome, {player.Name}!");

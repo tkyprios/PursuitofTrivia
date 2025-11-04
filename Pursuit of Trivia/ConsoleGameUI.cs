@@ -1,13 +1,13 @@
-﻿using System;
+﻿using Pursuit_of_Trivia.Configuration;
+using Pursuit_of_Trivia.Extensions;
+using Pursuit_of_Trivia.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
-
-using Pursuit_of_Trivia.Interfaces;
-using Pursuit_of_Trivia.Configuration;
-using Pursuit_of_Trivia.Extensions;
+using static Pursuit_of_Trivia.Configuration.GameSettings;
 
 namespace Pursuit_of_Trivia
 {
@@ -126,9 +126,40 @@ namespace Pursuit_of_Trivia
             Clear();
         }
 
-        public void DisplayStealingOptions(IEnumerable<Player> opponents, Category selectedCategory)
+        public void DisplayOpponentScoreForCategoryList(List<Player> opponents, Category selectedCategory)
         {
-            throw new NotImplementedException();
+            DisplayMessage("Who would you like to steal a card from?");
+
+            for (int i = 0; i < opponents.Count; i++)
+            {
+                var opponent = opponents[i];
+                int score = opponent.GetCategoryScore(selectedCategory);
+
+                ConsoleColor colour = score > 0 ? ConsoleColor.White : ConsoleColor.Gray; // if score is > 0, then text colour is white, otherwise they don't have high enough score, so text is grey.
+                WriteTextWithColour($"{i + 1}. {opponent.Name} (has {score} '{selectedCategory.GetName()}' cards)\n", colour);
+            }
+            DisplayMessage("0. Return/Back");
+        }
+
+        /// <summary>
+        /// Displays a list of categories from which the player can steal cards, along with the player's current card
+        /// count in each category.
+        /// </summary>
+        /// <remarks>The method prompts the player to choose a category to steal from by displaying the
+        /// categories with their respective card counts.</remarks>
+        /// <param name="player">The player for whom the category scores are displayed.</param>
+        /// <param name="categoriesWithSufficientCardsToSteal">A list of categories that have enough cards to be eligible for stealing.</param>
+        public void DisplayCategoriesWithSufficientCardsToSteal(Player player, List<Category> categoriesWithSufficientCardsToSteal)
+        {
+            Console.WriteLine("Which category would you like to steal?");
+            for (int i = 0; i < categoriesWithSufficientCardsToSteal.Count; i++)
+            {
+                var category = categoriesWithSufficientCardsToSteal[i];
+                var score = player.GetCategoryScore(category);
+                Console.WriteLine($"{i + 1}. {category.GetName()} (You have: {score} cards)");
+            }
+
+            DisplayMessage("0. Return/Back");
         }
 
 
@@ -194,6 +225,87 @@ namespace Pursuit_of_Trivia
         public void WriteEmptyLine() => Console.WriteLine();
 
         public void DisplayMessage(string text = "") => Console.WriteLine(text);
+
+        /// <summary>
+        /// Displays a validation error message in a highlighted color.
+        /// </summary>
+        /// <remarks>The message is displayed in yellow text to draw attention to the validation
+        /// error. Also ends by moving to next line.</remarks>
+        /// <param name="message">The validation error message to display. Cannot be null or empty.</param>
+        public void DisplayValidationError(string error)
+        {
+            WriteTextWithColour($"{error} Press any key to try again...", ConsoleColor.Yellow);
+            Console.ReadKey(true);
+            WriteEmptyLine();
+        }
+
+        /// <summary>
+        /// Displays the result of a player's answer, indicating whether it was correct or incorrect.
+        /// </summary>
+        /// <remarks>If the answer is correct, the method displays a message indicating that the player
+        /// earned the card  and gained a point in the card's question category. If the answer is incorrect, the method
+        /// displays  a message indicating that the player failed to earn the card, and the card is returned to the
+        /// bottom  of the deck.</remarks>
+        /// <param name="isCorrect">A value indicating whether the player's answer was correct.  <see langword="true"/> if the answer was
+        /// correct; otherwise, <see langword="false"/>.</param>
+        /// <param name="player">The player whose answer result is being displayed. Must not be <see langword="null"/>.</param>
+        /// <param name="card">The card associated with the question being answered. Must not be <see langword="null"/>.</param>
+        public void DisplayAnswerResult(bool isCorrect, Player player, Card card)
+        {
+            if (isCorrect)
+            {
+                WriteTextWithColour($"Correct! {player.Name} earned this card and 1 point towards category '{card.QuestionCategory.GetName()}'.", ConsoleColor.Green);
+            }
+            else
+            {
+                WriteTextWithColour($"Incorrect! {player.Name} failed to earn this card. Returning to bottom of deck...", ConsoleColor.DarkRed);
+            }
+
+            WriteEmptyLine();
+        }
+
+        /// <summary>
+        /// Displays the result of a steal attempt in the game.
+        /// </summary>
+        /// <remarks>This method outputs a message to the console describing the outcome of the steal
+        /// attempt. If the steal is successful, it indicates which player stole the card and from whom. If the steal
+        /// fails, it indicates that the losing player had no cards of the specified category to steal.</remarks>
+        /// <param name="isSuccess">A value indicating whether the steal attempt was successful.  <see langword="true"/> if the steal was
+        /// successful; otherwise, <see langword="false"/>.</param>
+        /// <param name="losingPlayer">The player from whom the card was attempted to be stolen.</param>
+        /// <param name="questionCategory">The category of the card involved in the steal attempt.</param>
+        /// <param name="receivingPlayer">The player attempting to steal the card.</param>
+        public void DisplayStealResult(bool isSuccess, Player losingPlayer, Category questionCategory, Player receivingPlayer)
+        {
+            if (isSuccess)
+            {
+                WriteTextWithColour($"{receivingPlayer.Name} stole a '{questionCategory.GetName()}' card from {losingPlayer.Name}!", ConsoleColor.Yellow);
+            }
+            else
+            {
+                WriteTextWithColour($"{losingPlayer.Name} has no '{questionCategory.GetName()}' cards to steal. How disappointing.", ConsoleColor.DarkYellow);
+            }
+
+            WriteEmptyLine();
+        }
+
+        /// <summary>
+        /// Waits for the user to press a key, optionally displaying a message beforehand.
+        /// </summary>
+        /// <remarks>This method pauses execution until the user presses a key. The key press is not
+        /// displayed in the console.</remarks>
+        /// <param name="message">An optional message to display to the user before waiting for input. If null or empty, no message is
+        /// displayed.</param>
+        public void WaitForInput(string message = null)
+        {
+            if (!string.IsNullOrEmpty(message))
+            {
+                DisplayMessage(message);
+            }
+            Console.ReadKey(true);
+            WriteEmptyLine();
+        }
+
         /// <summary>
         /// Writes the specified text to the console in the specified color.
         /// </summary>

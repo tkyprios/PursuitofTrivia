@@ -41,25 +41,25 @@ namespace Pursuit_of_Trivia
         {
             _gameUI.Clear();
             var currentPlayer = _gameTable.GetCurrentPlayer();
-            Console.WriteLine($"It's {currentPlayer.Name}'s turn!");
+            _gameUI.DisplayMessage($"It's {currentPlayer.Name}'s turn!");
 
             bool turnComplete = false;
 
             while (!turnComplete)
             {
+                _gameUI.WriteEmptyLine();
                 _gameUI.DisplayTurnOptions();
 
-                if (!int.TryParse(Console.ReadLine(), out int playerSelection))
+                if (!_inputHandler.TryGetNumberInRange(0, 3, out int selection))
                 {
-                    Console.WriteLine("Please enter a valid number."); // VALIDATION
-                    _gameUI.Clear();
-                    _gameUI.DisplayTurnOptions();
+                    _gameUI.DisplayValidationError("Please enter a valid number.");
+                    continue; // Move to next iteration of loop
                 }
 
-                switch (playerSelection)
+                switch (selection)
                 {
                     case 0:
-                        Console.WriteLine($"Player {currentPlayer} is considering forefeit.");
+                        _gameUI.DisplayMessage($"Player {currentPlayer.Name} is considering forefeit.");
                         if (_inputHandler.ConfirmYesNoAction("Are you sure you want to forfeit? (Y/N)"))
                         {
                             return TurnResult.Exit;
@@ -76,8 +76,7 @@ namespace Pursuit_of_Trivia
                         if (HandleStealingTurn(currentPlayer)) turnComplete = true;
                         break;
                     default:
-                        Console.WriteLine("Invalid input. Press Enter to try again."); // VALIDATION
-                        Console.ReadLine();
+                        _gameUI.DisplayValidationError("Invalid selection."); 
                         break;
                 }
             }
@@ -108,7 +107,7 @@ namespace Pursuit_of_Trivia
             }
             else
             {
-                Console.Clear();
+                _gameUI.Clear();
                 return false; // return to menu
             }
 
@@ -131,8 +130,7 @@ namespace Pursuit_of_Trivia
 
                 if (!_inputHandler.TryGetCategorySelection(out int selection))
                 {
-                    Console.WriteLine("Please enter a valid category number."); // VALIDATION
-                    Console.ReadKey();
+                    _gameUI.DisplayValidationError("Please enter a valid category number.");
                     continue;
                 }
 
@@ -191,7 +189,7 @@ namespace Pursuit_of_Trivia
 
                 if (!_inputHandler.TryGetLetterChoice(out char letter))
                 {
-                    Console.WriteLine("Please enter a valid letter (A-D).\n"); // VALIDATION
+                    _gameUI.DisplayValidationError("Please enter a valid letter (A-D).");
                     continue;
                 }
 
@@ -206,26 +204,25 @@ namespace Pursuit_of_Trivia
 
                 if (card.CheckAnswer(selectedAnswer))
                 {
-                    Console.WriteLine($"Correct! {player.Name} earned this card and 1 point towards category '{card.QuestionCategory.GetName()}'."); //ANSWER RESULT
+                    _gameUI.DisplayAnswerResult(true, player, card);
                     player.AddCard(card);
                 }
 
                 else
                 {
-                    Console.WriteLine($"Incorrect! {player.Name} failed to earn this card. Returning to bottom of deck..."); // ANSWER RESULT
-                    _gameTable.MasterQuestionDeck.ReturnCardToBottom(card);
+                   _gameUI.DisplayAnswerResult(false, player, card);
+                   _gameTable.MasterQuestionDeck.ReturnCardToBottom(card);
 
                     var receivingPlayer = _gameTable.GetRandomOtherPlayer(); // the lucky player to steal a card from the player who answered incorrect.
 
-                    Console.WriteLine($"The lucky player {receivingPlayer.Name} gets to draw a random card from {player.Name}'s '{card.QuestionCategory.GetName()}' collection."); // DRAW AUTHORITY MESSAGE
+                    _gameUI.DisplayMessage($"The lucky player {receivingPlayer.Name} gets to steal a random card from {player.Name}'s '{card.QuestionCategory.GetName()}' collection.");
 
                     HandleStealCard(player, card.QuestionCategory, receivingPlayer);
 
 
                 }
 
-                Console.WriteLine("\nPress any key to end turn..."); // WAIT FOR INPUT
-                Console.ReadKey(true);
+                _gameUI.WaitForInput("\nPress any key to end turn...");
                 break;
             }
         }
@@ -245,11 +242,11 @@ namespace Pursuit_of_Trivia
 
             if (losingPlayer.TransferRandomCard(questionCategory, receivingPlayer))
             {
-                Console.WriteLine($"{receivingPlayer.Name} stole a '{questionCategory.GetName()}' card from {losingPlayer.Name}!"); // DISPLAY STEAL RESULT
+                _gameUI.DisplayStealResult(true, losingPlayer, questionCategory, receivingPlayer);
             }
             else
             {
-                Console.WriteLine($"{losingPlayer.Name} has no '{questionCategory.GetName()}' cards to steal. How disappointing."); // DISPLAY STEAL RESULT
+                _gameUI.DisplayStealResult(false, losingPlayer, questionCategory, receivingPlayer);
             }
         }
 
@@ -285,8 +282,7 @@ namespace Pursuit_of_Trivia
             if (selectedCategoryScore <= 0)
             {
                 _gameUI.DisplayMessage($"The selected player {playerToStealFrom} does not have enough cards in category '{categoryToStealFrom.GetName()}'.");
-                Console.WriteLine("Press any key to return to main menu..."); // WAIT FOR INPUT
-                Console.ReadKey();
+                _gameUI.WaitForInput("Press any key to return to main menu...");
                 return false;
             }
 
@@ -314,8 +310,7 @@ namespace Pursuit_of_Trivia
             if (!categoriesWithSufficientCardsToSteal.Any())
             {
                 _gameUI.DisplayMessage($"You need at least {GameSettings.Scoring.REQ_SCORE_PER_CATEGORY_TO_STEAL} cards in a category to steal from another player!");
-                Console.WriteLine("Press any key to return to turn options...\n"); // WAIT FOR INPUT
-                Console.ReadKey(true);
+                _gameUI.WaitForInput("Press any key to return to turn options...");
                 _gameUI.Clear();
                 return null;
             }
@@ -323,21 +318,13 @@ namespace Pursuit_of_Trivia
             do
             {
                 _gameUI.Clear();
-                Console.WriteLine("Which category would you like to steal?"); // CATEGORY STEAL OPTIONS
-                for (int i = 0; i < categoriesWithSufficientCardsToSteal.Count; i++)
-                {
-                    var category = categoriesWithSufficientCardsToSteal[i];
-                    var score = currentPlayer.GetCategoryScore(category);
-                    Console.WriteLine($"{i + 1}. {category.GetName()} (You have: {score} cards)");
-                }
 
-                _gameUI.DisplayMessage("0. Return/Back");
+                _gameUI.DisplayCategoriesWithSufficientCardsToSteal(currentPlayer, categoriesWithSufficientCardsToSteal);
 
                 // Validate input
-                if (!int.TryParse(Console.ReadLine(), out int selection))
+                if (!_inputHandler.TryGetNumberInRange(0, categoriesWithSufficientCardsToSteal.Count, out int selection))
                 {
-                    Console.WriteLine("Please enter a valid number."); // VALIDATION
-                    Console.ReadKey();
+                    _gameUI.DisplayValidationError("Please enter a valid number.");
                     continue;
                 }
 
@@ -346,11 +333,7 @@ namespace Pursuit_of_Trivia
                 if (selection == 0)
                     return null;
 
-                if (selection > 0 && selection <= categoriesWithSufficientCardsToSteal.Count)
-                    return categoriesWithSufficientCardsToSteal[selection - 1]; // the player to steal from
-
-                Console.WriteLine("Invalid selection. Press any key to try again."); // VALIDATION
-                Console.ReadKey(true);
+                return categoriesWithSufficientCardsToSteal[selection - 1]; // the player to steal from
             } while (true);
 
 
@@ -379,51 +362,20 @@ namespace Pursuit_of_Trivia
             {
                 _gameUI.Clear();
 
-                _gameUI.DisplayMessage("Who would you like to steal a card from?");
-
-                for (int i = 0; i < opponents.Count; i++)
-                {
-                    var opponent = opponents[i];
-                    int score = opponent.GetCategoryScore(selectedCategory);
-
-
-                    // Colour code for if the opponent has enough cards for the selected category to steal from.
-                    ConsoleColor colour;
-
-                    if (score > 0)
-                    {
-                        colour = ConsoleColor.White;
-                    }
-
-                    else
-                    {
-                        colour = ConsoleColor.Gray;
-                    }
-
-                    _gameUI.WriteTextWithColour($"{i + 1}. {opponent.Name} (has {score} '{selectedCategory.GetName()}' cards)\n", colour);
-
-                    _gameUI.WriteEmptyLine();
-                }
-
-                _gameUI.DisplayMessage("0. Return/Back");
+                _gameUI.DisplayOpponentScoreForCategoryList(opponents, selectedCategory);
 
                 // Validate input
-                if (!int.TryParse(Console.ReadLine(), out int selection))
+                if (!_inputHandler.TryGetNumberInRange(0, opponents.Count, out int selection))
                 {
-                    Console.WriteLine("Please enter a valid number."); // VALIDATION
-                    Console.ReadKey(); 
+                    _gameUI.DisplayValidationError("Please enter a valid number.");
                     continue;
                 }
 
-                // Check if selection is valid
+                // return to menu
                 if (selection == 0)
                     return null;
 
-                if (selection > 0 && selection <= opponents.Count)
-                    return opponents[selection - 1]; // the player to steal from
-
-                Console.WriteLine("Invalid selection. Press any key to try again."); // VALIDATION
-                Console.ReadKey(true);
+                 return opponents[selection - 1]; // the player to steal from
             } while (true);
 
 
