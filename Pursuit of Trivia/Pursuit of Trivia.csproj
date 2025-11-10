@@ -52,6 +52,7 @@
     <Compile Include="Extensions\CollectionExtensions.cs" />
     <Compile Include="Extensions\EnumExtensions.cs" />
     <Compile Include="Game.cs" />
+    <Compile Include="GameEvents\GameEventsArgs.cs" />
     <Compile Include="GameUI.cs" />
     <Compile Include="Interfaces\IGameUI.cs" />
     <Compile Include="Interfaces\IInputHandler.cs" />
